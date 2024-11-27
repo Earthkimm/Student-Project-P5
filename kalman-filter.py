@@ -17,7 +17,7 @@ Varying_inputs = not Varying_Sigmas
 #   DEFINE FUNCTIONS
 #
 #######################
-def Kalman_Filter(input, initial_x, initial_SigmaX, SigmaW, SigmaV):
+def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaW, SigmaV):
     maxIter = len(input)
     xhat = initial_x
     SigmaX = initial_SigmaX
@@ -30,7 +30,7 @@ def Kalman_Filter(input, initial_x, initial_SigmaX, SigmaW, SigmaV):
 
         # KF Step 1b: Error-covariance time update
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + SigmaW
-        ytrue = y_Noise[k]
+        ytrue = measured_voltage[k]
 
         # KF Step 1c: Estimate system output
         yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k]) + b
@@ -84,8 +84,6 @@ print(OCV[SOC == 0.002])    # Prints OCV when SOC = 0.002
 
 fp = ".\\udds.csv"      # Used to access dataset for "Dynamic Profile 1"
 df = pd.read_csv(fp)
-fp2 = ".\\us06.csv"     # Used to access dataset for "Dynamic Profile 2"
-df2 = pd.read_csv(fp2)
 
 ###########################
 #
@@ -138,7 +136,7 @@ elif Varying_inputs:
 ##############################################
 plot_col = 0    # This keeps track of what figure column is being worked with
 for input_NoNoise in inputs:    # It is assumed inputs are without noise until it's added
-    # Initialize true system initial state and use CC to find voltage outputs of the battery
+    # Initialise true system initial state and use CC to find voltage outputs of the battery
     xtrue = np.array([[0.7],
                         [0]])
     maxIter, xstore, y_NoNoise = Couloumb_Counting(input_NoNoise, xtrue, OCV, SOC)
@@ -157,7 +155,7 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
             xhat = np.array([[0.7],
                             [0]])
             SigmaX = np.ones((2, 2))
-            xhatstore, SigmaXstore = Kalman_Filter(input_Noise, xhat, SigmaX, Sigma_W, Sigma_V)
+            xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_W, Sigma_V)
 
             # Declare what axis to use for the current combination of Sigmas/inputs and plot in the given axis
             ax = axs[plot_row, plot_col]
