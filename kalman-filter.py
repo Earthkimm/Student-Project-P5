@@ -29,7 +29,7 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaW, Si
         xhat = np.matmul(A, xhat) + B*input_Noise[k]
 
         # KF Step 1b: Error-covariance time update
-        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + SigmaW
+        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.eye(2)*SigmaW
         ytrue = measured_voltage[k]
 
         # KF Step 1c: Estimate system output

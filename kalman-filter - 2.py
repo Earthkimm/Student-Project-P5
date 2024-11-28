@@ -21,7 +21,7 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaW, Si
         xhat = np.matmul(A, xhat) + B*input_Noise[k]
 
         # KF Step 1b: Error-covariance time update
-        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + SigmaW
+        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.eye(2)*SigmaW
         ytrue = measured_voltage[k]
 
         # KF Step 1c: Estimate system output
@@ -54,12 +54,14 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
         xstore[:,k+1] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
 
-def Colormesh(plot, matrix, vmin, cmap, xticks, yticks):
+def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False):
+    if not extra:
+        extra = plot+" [%]"
     plt.pcolormesh(matrix, norm=colors.LogNorm(vmin=vmin), cmap=cmap)
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
             plt.text(j+0.5, i+0.5, f"{matrix[i, j]*100:.3f}", color="white", ha="center", va="center")
-    cbar = plt.colorbar(label="RMSE [%]", ticks=[0.01, 0.011, 0.012, 0.013, 0.014, 0.015])
+    cbar = plt.colorbar(label=extra, ticks=cticks)
     cbar.set_ticklabels(np.round(cbar.get_ticks()*100, 1))
     plt.xticks(xticks[0], xticks[1])
     plt.xlabel("$\Sigma_{\\tilde{v}}$")
@@ -175,6 +177,6 @@ xticks = [[i+0.5 for i in range(len(SigmaV))],
 yticks = [[i+0.5 for i in range(len(SigmaW))],
           [format(Sigma_W, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_W in SigmaW]]
 
-Colormesh("RMSE", RMSE_matrix, 0.01, custom_cmap, xticks, yticks)
-Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.01, custom_cmap, xticks, yticks)
-Colormesh("Deviation Percentage", reliability_matrix, 0.001, custom_cmap, xticks, yticks)
+Colormesh("RMSE", RMSE_matrix, 0.01, [0.01, 0.011, 0.012, 0.013, 0.014, 0.015], xticks, yticks, custom_cmap)
+Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.01, [0.01, 0.1, 1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
+Colormesh("Deviation Percentage", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")

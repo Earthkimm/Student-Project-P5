@@ -1,5 +1,9 @@
 import pandas as pd,  matplotlib.pyplot as plt,  numpy as np, scipy.stats as stats
 
+QQ_plot = False
+Residual_plot = False
+Linear_fit_plot = False
+
 def linear_fit_OCV():
     # Load the CSV file
     file_path = '.\\OCV_curve.csv'
@@ -34,61 +38,50 @@ def linear_fit_OCV():
     # For QQ and residual plots:
     fitted_values = np.matmul(X, beta_mle)
     residuals = Y - fitted_values
-
-    """ OOOOLLLLDDD  # Fit a linear model to the filtered data using numpy.polyfit
-    coefficients = np.polyfit(filtered_soc, filtered_ocv, 1, full=True)
-    #print(f"R^2: {1 - coefficients[1][0]/(np.sum((filtered_ocv - filtered_ocv.mean())**2))}")
-    linear_fit = np.poly1d(coefficients[0])
     
-    a = coefficients[0][0]
-    b = coefficients[0][1]
-
-    # Define the range for plotting
-    #soc_range = np.linspace(0, 1, 100)
-    ocv_fit = linear_fit(filtered_soc)
-    residuals = filtered_ocv - ocv_fit
-    #residuals = np.random.normal(1, 4, len(soc))
-    #standardised_residuals = residuals/np.sqrt(np.sum(residuals**2)/(len(residuals)-1))"""
-    
+    if QQ_plot or Residual_plot or Linear_fit_plot:
+        plt.rc('font', weight='normal', size=12)    # Do this for nicer plots in project report
     # QQ plot
-    """plt.rc('font', weight='normal', size=12)
-    fig, ax = plt.subplots(1, figsize=(6, 3))
-    (osm, osr), yeet = stats.probplot(filtered_ocv, dist="norm", plot=plt)
-    line1, line2 = ax.get_lines()
-    line1.set_color('#00916E')
-    line2.set_color('#FCB97D')
-    ax.grid()
-    ax.set_title("", pad=-10)
-    ax.set_xlabel("Theoretical Quantiles")
-    ax.set_ylabel("Sample Quantiles")
-    plt.savefig('Figurer/QQ-plot Python.pdf', dpi=400, bbox_inches='tight')
-    plt.show()
+    if QQ_plot:
+        fig, ax = plt.subplots(1, figsize=(6, 3))
+        (osm, osr), yeet = stats.probplot(filtered_ocv, dist="norm", plot=plt)
+        line1, line2 = ax.get_lines()   # stats.probplot creates is own lines with colors, this is just to changes these colors
+        line1.set_color('#00916E')
+        line2.set_color('#FCB97D')
+        ax.grid()
+        ax.set_title("", pad=-10)   # stats.probplot creates a title for the plot, this is unwanted and is thus removed, pad is to counteract the space made for the title
+        ax.set_xlabel("Theoretical Quantiles")
+        ax.set_ylabel("Sample Quantiles")
+        plt.savefig('Figurer/QQ-plot Python.pdf', dpi=400, bbox_inches='tight')
+        plt.show()
     
     # Residuals vs Fitted values plot
-    fig, ax = plt.subplots(1, figsize=(6, 3))
-    ax.scatter(fitted_values, residuals, color='#00916E')
-    ax.set_xlabel("Fitted Values")
-    ax.set_ylabel("Residuals")
-    #ax.set_title("Residual Plot")
-    ax.hlines(0, -2, 6, '#FCB97D')
-    ax.set_xlim(3.25, 4.25)
-    ax.grid()
-    plt.savefig('Figurer/Residual_plot Python.pdf', dpi=400, bbox_inches='tight')
-    plt.show()
+    if Residual_plot:
+        fig, ax = plt.subplots(1, figsize=(6, 3))
+        ax.scatter(fitted_values, residuals, color='#00916E')
+        ax.set_xlabel("Fitted Values [V]")
+        ax.set_ylabel("Residuals [V]")
+        #ax.set_title("Residual Plot")
+        ax.hlines(0, -2, 6, '#FCB97D')
+        ax.set_xlim(3.25, 4.25)
+        ax.grid()
+        plt.savefig('Figurer/Residual_plot Python.pdf', dpi=400, bbox_inches='tight')
+        plt.show()
 
     # Plot the data
-    fig, ax = plt.subplots(1, figsize=(6, 3))
-    ax.plot(soc, ocv, label='Raw Data', color='#00916E')
-    ax.plot(filtered_soc, fitted_values, label='Linear Fit', color='#FCB97D', linestyle='--')
-    xticks = ax.get_xticks()[1:-1]  # Save ticks to modify labels into %
-    ax.set_xticks(xticks, labels=[np.round(xticks[i]*100, 1) for i in range(len(xticks))])
-    ax.set_xlabel('SOC [%]')
-    ax.set_ylabel('OCV [V]')
-    #ax.set_title('OCV vs SOC at $25^\circ$C')
-    ax.grid()
-    ax.legend()
-    plt.savefig('Figurer/OCV_SOC.pdf', format='pdf', dpi=400, bbox_inches='tight')
-    plt.show()"""
+    if Linear_fit_plot:
+        fig, ax = plt.subplots(1, figsize=(6, 3))
+        ax.plot(soc, ocv, label='Raw Data', color='#00916E')
+        ax.plot(filtered_soc, fitted_values, label='Linear Fit', color='#FCB97D', linestyle='--')
+        xticks = ax.get_xticks()[1:-1]  # Save ticks to modify labels into %
+        ax.set_xticks(xticks, labels=[np.round(xticks[i]*100, 1) for i in range(len(xticks))])
+        ax.set_xlabel('SOC [%]')
+        ax.set_ylabel('OCV [V]')
+        #ax.set_title('OCV vs SOC at $25^\circ$C')
+        ax.grid()
+        ax.legend()
+        plt.savefig('Figurer/OCV_SOC.pdf', format='pdf', dpi=400, bbox_inches='tight')
+        plt.show()
     
     return beta_1[0], beta_2[0]
 

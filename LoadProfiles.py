@@ -1,11 +1,12 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 
 def profile_plots(loads, titles=["Constant 10A", "30A Pulses", "Dynamic Profile 1", "Dynamic Profile 2"], speeds=[pd.read_csv(".\\udds.csv")["Speed (km/h)"], pd.read_csv(".\\us06.csv")["Speed (km/h)"]]):
-    titles += titles[-2:]
-    profiles = loads + speeds
-    limit = int(np.ceil(len(loads)/2))
+    # This function is used to create a plot of all the load profiles and the data has plots of their speeds aswell
+    titles += titles[-2:]   # Since the last 2 profiles have 2 plots each, their titles are copied
+    profiles = loads + speeds   # list of all data used to plot
+    limit = int(np.ceil(len(loads)/2))  # This decides the amount of columns
     fig, axs = plt.subplots(3, limit, sharey="row", figsize=(9,12))
-    axs = axs.reshape(1, len(profiles))
+    axs = axs.reshape(1, len(profiles)) # Reshape the axes into a 1-D array for simpler access
     for profile in range(len(profiles)):
         ax = axs[0][profile]
         ax.plot(profiles[profile], color='#00916E')
