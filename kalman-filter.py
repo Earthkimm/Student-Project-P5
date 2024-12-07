@@ -57,8 +57,8 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
     xstore[:,0] = xtrue.T[0]
     y_NoNoise = np.zeros(maxIter)
     for k in range(1, maxIter):
-        y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xtrue = np.matmul(A, xtrue) + B*input[k]
+        y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xstore[:,k] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
 

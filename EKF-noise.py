@@ -9,7 +9,36 @@ np.random.seed(42069)
 #   DEFINE FUNCTIONS
 #
 #######################
-def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
+def poly_fit_OCV(order):
+    # Load the CSV file
+    file_path = '.\\OCV_curve.csv'
+    df = pd.read_csv(file_path)
+    
+    # Name SOC and OCV columns
+    soc = df['SOC']
+    ocv = df['OCV']
+    
+    # Define the range for filtering data
+    min_soc = 0.2
+    max_soc = 0.8
+
+    # Filter the data within the specified SOC range
+    mask = (soc >= min_soc) & (soc <= max_soc)
+    filtered_soc = soc[mask]
+    filtered_ocv = ocv[mask]
+    
+    # Create polynomial coefficients and reverse their order so the first in the array is for smallest order of z[k]
+    poly_coefficients = np.polyfit(filtered_soc, filtered_ocv, order)[::-1]
+    poly_values = np.zeros_like(filtered_soc)
+    for i in range(order+1):
+        poly_values += poly_coefficients[i] * filtered_soc ** i
+    return poly_values, poly_coefficients
+
+def C_(coef, x):
+    cc1 = [i * coef[i] * x[0][0] ** (i-1) for i in range(len(coef))]
+    return np.array([[sum(cc1), -R_1]])
+
+def Extended_Kalman_Filter(poly_coef, input, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
     maxIter = len(input)
     xhat = initial_x
     SigmaX = initial_SigmaX
@@ -24,11 +53,14 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, Si
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
 
         # KF Step 1c: Estimate system output
-        yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k]) + b
+        cc = [poly_coef[i] * xhat[0][0] ** (i-1) for i in range(len(poly_coef))]
+        C = np.array([np.sum(cc), -R_1])
+        yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k])
 
         # KF Step 2a: Compute Kalman gain matrix
-        SigmaY = np.matmul(np.matmul(C, SigmaX), C.T) + SigmaS
-        L = np.matmul(SigmaX, C.T)/SigmaY
+        C_hat = C_(poly_coef, xhat)
+        SigmaY = np.matmul(np.matmul(C_hat, SigmaX), C_hat.T) + SigmaS
+        L = np.matmul(SigmaX, C_hat.T)/SigmaY
 
         # KF Step 2b: State-estimate measurement update
         ytrue = measured_voltage[k]
@@ -68,7 +100,7 @@ def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vma
     plt.yticks(yticks[0], yticks[1])
     plt.ylabel("$\\hat{\sigma}_{n}^2$", rotation=0)
     plt.tight_layout()
-    plt.savefig(f"Noise comparison colormeshes\\{plot} Colormesh.pdf", dpi=1000)
+    plt.savefig(f"Noise comparison colormeshes\\{plot} Colormesh Extended.pdf", dpi=1000)
     plt.clf()
 
 ####################
@@ -99,8 +131,9 @@ A = np.array([[1, 0],
 B = np.array([[-delta_t / Q],
               [1-np.exp(-delta_t / (R_1C_1))]])
 # Output-equation matrices
-C = np.array([[a, -R_1]])
 D = np.array([[-R_0]])
+# Polynoimal fit
+poly_coef = poly_fit_OCV(15)[1]
 
 ###########################
 #
@@ -149,7 +182,7 @@ for Sigma_s in SigmaS:
         xhat = np.array([[0.7],
                         [0]])
         SigmaX = np.ones((2, 2))
-        xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
+        xhatstore, SigmaXstore = Extended_Kalman_Filter(poly_coef, input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
 
         RMSE_matrix[row, col] = np.sqrt(np.sum(np.abs(xstore[0,:]-xhatstore[0,:])**2)/(maxIter))
         bound_width_store[row, col] = 6*np.sqrt(SigmaXstore[0,0:])
@@ -178,6 +211,6 @@ xticks = [[i+0.5 for i in range(len(SigmaS))],
 yticks = [[i+0.5 for i in range(len(SigmaN))],
           [format(Sigma_n, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_n in SigmaN]]
 
-Colormesh("RMSE", RMSE_matrix, 0.014, [0.014, 0.0142, 0.0144, 0.0146, 0.0148, 0.015, 0.0152, 0.0154], xticks, yticks, custom_cmap, roundfactor=2)
-Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.0001, [0.0001, 0.001, 0.01, 0.1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
+Colormesh("RMSE", RMSE_matrix, 0.0005, [0.0005, 0.001, 0.005], xticks, yticks, custom_cmap, roundfactor=2)
+Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.001, [0.001, 0.01, 0.09], xticks, yticks, custom_cmap, "Error bound width mean [%]")
 Colormesh("Deviation Percentage", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")
