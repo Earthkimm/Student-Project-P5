@@ -75,7 +75,7 @@ def linear_fit_OCV():
     # Plot the data
     if Linear_fit_plot:
         fig, ax = plt.subplots(1, figsize=(6, 3))
-        ax.plot(filtered_soc, filtered_ocv, label='Raw Data', color='#00916E')
+        ax.plot(soc, ocv, label='Raw Data', color='#00916E')
         ax.plot(filtered_soc, fitted_values, label='Linear Fit', color='#FCB97D', linestyle='--')
         xticks = ax.get_xticks()[1:-1]  # Save ticks to modify labels into %
         ax.set_xticks(xticks, labels=[np.round(xticks[i]*100, 1) for i in range(len(xticks))])
