@@ -33,12 +33,12 @@ for i in range(5):
 
 fp1 = ".\\udds.csv"
 df1 = pd.read_csv(fp1)
-dynamic_profile_1 = df1["Normalized current (A)"]
+dynamic_profile_1 = np.array(df1["Normalized current (A)"])
 dynamic_profile_1 /= dynamic_profile_1[0]*2 # Under the assumption that a non-moving EV uses 0.5A the dataset is normalised according to this
 
 fp2 = ".\\us06.csv"
 df2 = pd.read_csv(fp2)
-dynamic_profile_2 = df2["Normalized current (A)"]
+dynamic_profile_2 = np.array(df2["Normalized current (A)"])
 dynamic_profile_2 /= dynamic_profile_2[0]*2
 
 loadprofiles = [constant_current, pulse_currents, dynamic_profile_1, dynamic_profile_2]

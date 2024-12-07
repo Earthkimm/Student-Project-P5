@@ -1,5 +1,10 @@
 import pandas as pd,  matplotlib.pyplot as plt,  numpy as np, scipy.stats as stats
 
+#################################
+#
+#   CHOOSE WHICH PLOTS TO PLOT
+#
+#################################
 QQ_plot = False
 Residual_plot = False
 Linear_fit_plot = False
@@ -44,12 +49,12 @@ def linear_fit_OCV():
     # QQ plot
     if QQ_plot:
         fig, ax = plt.subplots(1, figsize=(6, 3))
-        (osm, osr), yeet = stats.probplot(filtered_ocv, dist="norm", plot=plt)
+        (osm, osr), line_info = stats.probplot(filtered_ocv, dist="norm", plot=plt)
         line1, line2 = ax.get_lines()   # stats.probplot creates is own lines with colors, this is just to changes these colors
         line1.set_color('#00916E')
         line2.set_color('#FCB97D')
         ax.grid()
-        ax.set_title("", pad=-10)   # stats.probplot creates a title for the plot, this is unwanted and is thus removed, pad is to counteract the space made for the title
+        ax.set_title("", pad=-10)   # stats.probplot creates a title for the plot, this is unwanted and is thus removed, pad is to counteract the spacing made for the title
         ax.set_xlabel("Theoretical Quantiles")
         ax.set_ylabel("Sample Quantiles")
         plt.savefig('Figurer/QQ-plot Python.pdf', dpi=400, bbox_inches='tight')
@@ -61,7 +66,6 @@ def linear_fit_OCV():
         ax.scatter(fitted_values, residuals, color='#00916E')
         ax.set_xlabel("Fitted Values [V]")
         ax.set_ylabel("Residuals [V]")
-        #ax.set_title("Residual Plot")
         ax.hlines(0, -2, 6, '#FCB97D')
         ax.set_xlim(3.25, 4.25)
         ax.grid()
@@ -71,15 +75,13 @@ def linear_fit_OCV():
     # Plot the data
     if Linear_fit_plot:
         fig, ax = plt.subplots(1, figsize=(6, 3))
-        ax.plot(soc, ocv, label='Raw Data', color='#00916E')
+        ax.plot(filtered_soc, filtered_ocv, label='Raw Data', color='#00916E')
         ax.plot(filtered_soc, fitted_values, label='Linear Fit', color='#FCB97D', linestyle='--')
         xticks = ax.get_xticks()[1:-1]  # Save ticks to modify labels into %
         ax.set_xticks(xticks, labels=[np.round(xticks[i]*100, 1) for i in range(len(xticks))])
         ax.set_xlabel('SOC [%]')
         ax.set_ylabel('OCV [V]')
-        #ax.set_title('OCV vs SOC at $25^\circ$C')
         ax.grid()
-        ax.legend()
         plt.savefig('Figurer/OCV_SOC.pdf', format='pdf', dpi=400, bbox_inches='tight')
         plt.show()
     

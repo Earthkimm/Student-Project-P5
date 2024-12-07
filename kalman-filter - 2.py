@@ -9,7 +9,7 @@ np.random.seed(42069)
 #   DEFINE FUNCTIONS
 #
 #######################
-def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaW, SigmaV):
+def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
     maxIter = len(input)
     xhat = initial_x
     SigmaX = initial_SigmaX
@@ -21,14 +21,14 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaW, Si
         xhat = np.matmul(A, xhat) + B*input_Noise[k]
 
         # KF Step 1b: Error-covariance time update
-        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.eye(2)*SigmaW
+        SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
         ytrue = measured_voltage[k]
 
         # KF Step 1c: Estimate system output
         yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k]) + b
 
         # KF Step 2a: Compute Kalman gain matrix
-        SigmaY = np.matmul(np.matmul(C, SigmaX), C.T) + SigmaV
+        SigmaY = np.matmul(np.matmul(C, SigmaX), C.T) + SigmaS
         L = np.matmul(SigmaX, C.T)/SigmaY
 
         # KF Step 2b: State-estimate measurement update
@@ -54,19 +54,19 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
         xstore[:,k+1] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
 
-def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False):
+def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vmax=None, roundfactor=1):
     if not extra:
         extra = plot+" [%]"
-    plt.pcolormesh(matrix, norm=colors.LogNorm(vmin=vmin), cmap=cmap)
+    plt.pcolormesh(matrix, norm=colors.LogNorm(vmin=vmin, vmax=vmax), cmap=cmap)
     for i in range(len(matrix)):
         for j in range(len(matrix[i])):
             plt.text(j+0.5, i+0.5, f"{matrix[i, j]*100:.3f}", color="white", ha="center", va="center")
     cbar = plt.colorbar(label=extra, ticks=cticks)
-    cbar.set_ticklabels(np.round(cbar.get_ticks()*100, 1))
+    cbar.set_ticklabels(np.round(np.array(cticks)*100, roundfactor))
     plt.xticks(xticks[0], xticks[1])
-    plt.xlabel("$\Sigma_{\\tilde{v}}$")
+    plt.xlabel("$\\hat{\sigma}_{s}^2$")
     plt.yticks(yticks[0], yticks[1])
-    plt.ylabel("$\Sigma_{\\tilde{w}}$")
+    plt.ylabel("$\\hat{\sigma}_{n}^2$", rotation=0)
     plt.tight_layout()
     plt.savefig(f"Noise comparison colormeshes\\{plot} Colormesh.pdf", dpi=1000)
     plt.clf()
@@ -107,11 +107,11 @@ D = np.array([[-R_0]])
 #   INITIALISE VARIABLES
 #
 ###########################
-SigmaW = [0, 1e-7, 1e-6, 1e-5, 1e-4, 2.2e-4, 1e-3, 1e-2, 1e-1]  # Process-noise covariances
-SigmaV = [0, 1e-7, 1e-6, 1e-5, 4.1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Sensor-noise covariances
+SigmaN = [0, 1e-7, 1e-6, 1e-5, 1e-4, 2.2e-4, 1e-3, 1e-2, 1e-1]  # Process-noise covariances [0, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 2.2e+7, 1e+8, 1e+9]#
+SigmaS = [0, 1e-7, 1e-6, 1e-5, 4.1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Sensor-noise covariances [1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3, 1e-2]#
 input = loadprofiles[2]
 
-size = [len(SigmaW), len(SigmaV)]
+size = [len(SigmaN), len(SigmaS)]
 RMSE_matrix = np.zeros(size)
 bound_width_store = np.zeros(size + [len(input)+1])
 bound_width_mean_store = np.zeros(size)
@@ -141,14 +141,14 @@ y_Noise = y_NoNoise + np.random.normal(0, y_std_dev, maxIter)
 #
 ##############################################
 col = 0
-for Sigma_V in SigmaV:
+for Sigma_s in SigmaS:
     row = 0
-    for Sigma_W in SigmaW:
+    for Sigma_n in SigmaN:
         # Initialise Kalman filter estimates and use the Kalman_Filter function to find lists of estimates
         xhat = np.array([[0.7],
                         [0]])
         SigmaX = np.ones((2, 2))
-        xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_W, Sigma_V)
+        xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
 
         RMSE_matrix[row, col] = np.sqrt(np.sum(np.abs(xstore[0,:]-xhatstore[0,:])**2)/(maxIter+1))
         bound_width_store[row, col] = 6*np.sqrt(SigmaXstore[0,0:])
@@ -172,11 +172,11 @@ custom_cmap = cmap=colors.LinearSegmentedColormap.from_list("my_custom_cmap", ["
 ############################
 plt.rc('font', weight='normal', size=18)
 plt.figure(figsize=(14, 6))
-xticks = [[i+0.5 for i in range(len(SigmaV))],
-          [format(Sigma_V, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_V in SigmaV]]
-yticks = [[i+0.5 for i in range(len(SigmaW))],
-          [format(Sigma_W, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_W in SigmaW]]
+xticks = [[i+0.5 for i in range(len(SigmaS))],
+          [format(Sigma_s, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_s in SigmaS]]
+yticks = [[i+0.5 for i in range(len(SigmaN))],
+          [format(Sigma_n, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_n in SigmaN]]
 
-Colormesh("RMSE", RMSE_matrix, 0.01, [0.01, 0.011, 0.012, 0.013, 0.014, 0.015], xticks, yticks, custom_cmap)
-Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.01, [0.01, 0.1, 1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
+Colormesh("RMSE", RMSE_matrix, 0.014, [0.014, 0.0142, 0.0144, 0.0146, 0.0148, 0.015, 0.0152, 0.0154], xticks, yticks, custom_cmap, roundfactor=2)
+Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.0001, [0.0001, 0.001, 0.01, 0.1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
 Colormesh("Deviation Percentage", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")
