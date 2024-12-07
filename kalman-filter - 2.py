@@ -13,16 +13,15 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, Si
     maxIter = len(input)
     xhat = initial_x
     SigmaX = initial_SigmaX
-    xhatstore = np.zeros((len(xhat), maxIter+1))
+    xhatstore = np.zeros((len(xhat), maxIter))
     xhatstore[:,0] = xhat.T[0]
-    SigmaXstore = np.zeros((len(xhat)**2, maxIter+1))
-    for k in range(maxIter):
+    SigmaXstore = np.zeros((len(xhat)**2, maxIter))
+    for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
-        xhat = np.matmul(A, xhat) + B*input_Noise[k]
+        xhat = np.matmul(A, xhat) + B*input_Noise[k-1]
 
         # KF Step 1b: Error-covariance time update
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
-        ytrue = measured_voltage[k]
 
         # KF Step 1c: Estimate system output
         yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k]) + b
@@ -32,26 +31,27 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, Si
         L = np.matmul(SigmaX, C.T)/SigmaY
 
         # KF Step 2b: State-estimate measurement update
+        ytrue = measured_voltage[k]
         xhat += L*(ytrue - yhat)
 
         # KF Step 2c: Error-covariance measurement update
         SigmaX -= np.matmul(np.matmul(L, SigmaY), L.T)
 
         # [Store information for evaluation/plotting purposes]
-        xhatstore[:,k+1] = xhat.T
-        SigmaXstore[:,k+1] = SigmaX.flatten()
+        xhatstore[:,k] = xhat.T
+        SigmaXstore[:,k] = SigmaX.flatten()
     return xhatstore, SigmaXstore
 
 def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
     maxIter = len(input)
     xtrue = initial_x
-    xstore = np.zeros((len(xtrue), maxIter+1))
+    xstore = np.zeros((len(xtrue), maxIter))
     xstore[:,0] = xtrue.T[0]
     y_NoNoise = np.zeros(maxIter)
-    for k in range(maxIter):
+    for k in range(1, maxIter):
         y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xtrue = np.matmul(A, xtrue) + B*input[k]
-        xstore[:,k+1] = xtrue.T[0]
+        xstore[:,k] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
 
 def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vmax=None, roundfactor=1):
@@ -113,7 +113,7 @@ input = loadprofiles[2]
 
 size = [len(SigmaN), len(SigmaS)]
 RMSE_matrix = np.zeros(size)
-bound_width_store = np.zeros(size + [len(input)+1])
+bound_width_store = np.zeros(size + [len(input)])
 bound_width_mean_store = np.zeros(size)
 reliability_matrix = np.zeros(size)
 
