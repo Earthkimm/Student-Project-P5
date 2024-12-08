@@ -51,7 +51,7 @@ R_1C_1 = 22
 Q = 49.3*3600
 R_1 = 0.0009
 R_0 = 0.00127
-z_0 = 0.7 #Initial guess - true is 70%
+z_0 = 0.6 #Initial guess - true is 70%
 
 
 # Covariances for the noises

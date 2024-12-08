@@ -115,9 +115,9 @@ for input in inputs:    # For hvert current-input kører vi igennem støjprofile
             if np.abs(xtrue[0]-xhat[0]) > 3*np.sqrt(SigmaX[0, 0]):
                     reliability_matrix[0, 0] += 1
             
-            L_xhat_temp = []
-            L_x_temp = []
-            Sigma_x1 = []
+            L_xhat_temp = [xhat[0][0]]
+            L_x_temp = [xtrue[0][0]]
+            Sigma_x1 = [SigmaX[0][0]]
             temp1 = []
             for k in range(maxIter):
                 #w = np.random.normal(0, np.sqrt(Sigma_W), (1, len(xtrue)))
