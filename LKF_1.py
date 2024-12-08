@@ -1,5 +1,6 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from EKF_1 import EKF
+from project_colors import *
 
 # Kalder de forskellige data
 ocv_curve = pd.read_csv(r".\\OCV_curve.csv")
@@ -154,12 +155,6 @@ plt.rc('font', weight='normal', size=16)
 EE = EKF()
 
 #---------------------------------------- PLOTS ------------------------------------------------------------
-# Farver
-dark_green = '#00916E'
-orange = '#FCB97D'
-purple = '#5B3758'
-red = '#DE6C83'
-light_green = '#D4E4BC'
 
 # 1) initial guess = 60% (change z_0)
 # 2) initial guess = 70%

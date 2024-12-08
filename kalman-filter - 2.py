@@ -1,6 +1,7 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd, matplotlib.colors as colors
 from OCV_SOC_curve import a, b
 from LoadProfiles import loadprofiles
+from project_colors import *
 
 np.random.seed(42069)
 
@@ -49,7 +50,7 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
     xstore[:,0] = xtrue.T[0]
     y_NoNoise = np.zeros(maxIter)
     for k in range(1, maxIter):
-        xtrue = np.matmul(A, xtrue) + B*input[k]
+        xtrue = np.matmul(A, xtrue) + B*input[k-1]
         y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xstore[:,k] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
@@ -107,8 +108,9 @@ D = np.array([[-R_0]])
 #   INITIALISE VARIABLES
 #
 ###########################
-SigmaN = [0, 1e-7, 1e-6, 1e-5, 1e-4, 2.2e-4, 1e-3, 1e-2, 1e-1]  # Process-noise covariances [0, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 2.2e+7, 1e+8, 1e+9]#
-SigmaS = [0, 1e-7, 1e-6, 1e-5, 4.1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Sensor-noise covariances [1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3, 1e-2]#
+# If SigmaN and SigmaS are both 0 at any time there are problems, therefore the first values is set to approximately machine epsilon
+SigmaN = [1e-16, 1e-7, 1e-6, 1e-5, 1e-4, 2.2e-4, 1e-3, 1e-2, 1e-1]  # Process-noise covariances [0, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 2.2e+7, 1e+8, 1e+9]#
+SigmaS = [1e-16, 1e-7, 1e-6, 1e-5, 4.1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Sensor-noise covariances [1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3, 1e-2]#
 input = loadprofiles[2]
 
 size = [len(SigmaN), len(SigmaS)]
@@ -160,11 +162,12 @@ for Sigma_s in SigmaS:
     col += 1
 
 # Remove nan and 0 from the matrices as they bug out the plots
+SigmaN[0] = 0; SigmaS[0] = 0    # Set to zero for plotting
 bound_width_mean_store = np.nan_to_num(bound_width_mean_store, nan=1e-10)
 reliability_matrix[reliability_matrix == 0] = 1e-10
 
 # Create a custom colormap with colors related to the project report
-custom_cmap = cmap=colors.LinearSegmentedColormap.from_list("my_custom_cmap", ["#5B3758", "#00916E", "#D4E4BC", "#FCB97D"])
+custom_cmap = cmap=colors.LinearSegmentedColormap.from_list("my_custom_cmap", [purple, dark_green, light_green, orange])
 
 ############################
 #

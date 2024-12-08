@@ -1,6 +1,7 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from OCV_SOC_curve import a, b
 from LoadProfiles import loadprofiles, profile_plots
+from project_colors import *
 
 ###############################
 #
@@ -24,6 +25,7 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, Si
     xhatstore = np.zeros((len(xhat), maxIter))
     xhatstore[:,0] = xhat.T[0]
     SigmaXstore = np.zeros((len(xhat)**2, maxIter))
+    SigmaXstore[:,0] = SigmaX.flatten()
     for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
         xhat = np.matmul(A, xhat) + B*input_Noise[k-1]
@@ -57,16 +59,16 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
     xstore[:,0] = xtrue.T[0]
     y_NoNoise = np.zeros(maxIter)
     for k in range(1, maxIter):
-        xtrue = np.matmul(A, xtrue) + B*input[k]
+        xtrue = np.matmul(A, xtrue) + B*input[k-1]
         y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xstore[:,k] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
 
 def Plotting(ax, xstore, xhatstore, SigmaXstore, maxIter):
-    ax.plot(xstore, color='#FCB97D', linestyle='-', label='True')
-    ax.plot(xhatstore, color='#00916E', linestyle='-', label='Estimate')
-    ax.plot(xhatstore+3*np.sqrt(SigmaXstore), color='#D4E4BC', linestyle='-.', label='Bounds')
-    ax.plot(xhatstore-3*np.sqrt(SigmaXstore), color='#D4E4BC', linestyle='-.')
+    ax.plot(xstore, color=orange, linestyle='-', label='True')
+    ax.plot(xhatstore, color=dark_green, linestyle='-', label='Estimate')
+    ax.plot(xhatstore+3*np.sqrt(SigmaXstore), color=light_green, linestyle='-.', label='Bounds')
+    ax.plot(xhatstore-3*np.sqrt(SigmaXstore), color=light_green, linestyle='-.')
     ax.grid()
     ax.set_xticks(np.round(np.linspace(0, maxIter, 4), 0))
     ax.set_yticks([0.6, 0.65, 0.7, 0.75])#[0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75]
@@ -117,7 +119,7 @@ if Varying_Sigmas:
     fig, axs = plt.subplots(len(SigmaN), len(SigmaS), figsize=(9, 7))
 elif Varying_inputs:
     inputs = loadprofiles[:]
-    #inputs = [np.hstack([input]*6) for input in inputs]
+    #inputs = [np.hstack([input]*6) for input in inputs]   # Used to test how the model reacts with longer inputs
     SigmaN = [1e-1] # Sigmas are constant when varying input
     SigmaS = [1e-2]
 
@@ -141,7 +143,7 @@ elif Sigma_comparison:
 ##############################################
 plot_col = 0    # This keeps track of what figure column is being worked with
 for input_NoNoise in inputs:    # It is assumed inputs are without noise until it's added
-    np.random.seed(42069)   # Set seed for consistant plotting
+    np.random.seed(42069)   # Set seed for consistent plotting
 
     # Initialise true system initial state and use CC to find voltage outputs of the battery
     xtrue = np.array([[0.7],
@@ -174,23 +176,27 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
             SigmaX = np.ones((2, 2))
             xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
 
+            if Sigma_n == 1e-16:    # This is for testing if the variances are 0, they give errors in the kalman filter as the mathematical equations become unstable
+                Sigma_n = 0
+            if Sigma_s == 1e-16:
+                Sigma_s = 0
             # Declare what axis to use for the current combination of Sigmas/inputs and plot in the given axis
             ax = axs[plot_row, plot_col]
             Plotting(ax, xstore[0], xhatstore[0], SigmaXstore[0], maxIter)
-            
+            print(Sigma_n, Sigma_s)
             # Determined by what kind of plot is chosen at the start of script make some final touches to the plot
             if Varying_Sigmas:
                 if plot_col == 0:
                     ax.set_ylabel("SOC [%]")
                 elif plot_col == len(SigmaS)-1:
                     twin = ax.twinx()
-                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(SigmaN[plot_row], ".1e").replace('1.0e-0', '$10^{-')+"}$")#, rotation=-90)
+                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0")+"}$")#, rotation=-90)
                     twin.set_yticks([])
                     ax.set_yticklabels([])
                 else:
                     ax.set_yticklabels([])
                 if plot_row == 0:
-                    ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-')+"}$")
+                    ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0")+"}$")
                     ax.set_xticklabels([])
                 elif plot_row == 1:
                     ax.set_xticklabels([])

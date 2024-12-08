@@ -1,6 +1,7 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd, matplotlib.colors as colors
 from OCV_SOC_curve import a, b
 from LoadProfiles import loadprofiles
+from project_colors import *
 
 np.random.seed(42069)
 
@@ -81,7 +82,7 @@ def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
     xstore[:,0] = xtrue.T[0]
     y_NoNoise = np.zeros(maxIter)
     for k in range(1, maxIter):
-        xtrue = np.matmul(A, xtrue) + B*input[k]
+        xtrue = np.matmul(A, xtrue) + B*input[k-1]
         y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
         xstore[:,k] = xtrue.T[0]
     return maxIter, xstore, y_NoNoise
@@ -197,7 +198,7 @@ bound_width_mean_store = np.nan_to_num(bound_width_mean_store, nan=1e-10)
 reliability_matrix[reliability_matrix == 0] = 1e-10
 
 # Create a custom colormap with colors related to the project report
-custom_cmap = cmap=colors.LinearSegmentedColormap.from_list("my_custom_cmap", ["#5B3758", "#00916E", "#D4E4BC", "#FCB97D"])
+custom_cmap = cmap=colors.LinearSegmentedColormap.from_list("my_custom_cmap", [purple, dark_green, light_green, orange])
 
 ############################
 #
