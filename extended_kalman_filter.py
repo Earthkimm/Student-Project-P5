@@ -11,21 +11,48 @@ from project_colors import *
 Varying_Sigmas = True
 Varying_inputs = False
 With_profileplots = Varying_inputs and False
-Sigma_comparison = False
 
 #######################
 #
 #   DEFINE FUNCTIONS
 #
 #######################
-def Kalman_Filter(input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
+def poly_fit_OCV(order):
+    # Load the CSV file
+    file_path = './OCV_curve.csv'
+    df = pd.read_csv(file_path)
+    
+    # Name SOC and OCV columns
+    soc = df['SOC']
+    ocv = df['OCV']
+    
+    # Define the range for filtering data
+    min_soc = 0.2
+    max_soc = 0.8
+
+    # Filter the data within the specified SOC range
+    mask = (soc >= min_soc) & (soc <= max_soc)
+    filtered_soc = soc[mask]
+    filtered_ocv = ocv[mask]
+    
+    # Create polynomial coefficients and reverse their order so the first in the array is for smallest order of z[k]
+    poly_coefficients = np.polyfit(filtered_soc, filtered_ocv, order)[::-1]
+    poly_values = np.zeros_like(filtered_soc)
+    for i in range(order+1):
+        poly_values += poly_coefficients[i] * filtered_soc ** i
+    return poly_values, poly_coefficients
+
+def C_(coef, x):
+    cc1 = [i * coef[i] * x[0][0] ** (i-1) for i in range(len(coef))]
+    return np.array([[sum(cc1), -R_1]])
+
+def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
     maxIter = len(input_)
     xhat = initial_x
     SigmaX = initial_SigmaX
     xhatstore = np.zeros((len(xhat), maxIter))
     xhatstore[:,0] = xhat.T[0]
     SigmaXstore = np.zeros((len(xhat)**2, maxIter))
-    SigmaXstore[:,0] = SigmaX.flatten()
     for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
         xhat = np.matmul(A, xhat) + B*input_[k-1]
@@ -34,11 +61,14 @@ def Kalman_Filter(input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, S
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
 
         # KF Step 1c: Estimate system output
-        yhat = np.matmul(C, xhat) + np.dot(D, input_[k]) + b
+        cc = [poly_coef[i] * xhat[0][0] ** (i-1) for i in range(len(poly_coef))]
+        C = np.array([np.sum(cc), -R_1])
+        yhat = np.matmul(C, xhat) + np.dot(D, input_[k])
 
         # KF Step 2a: Compute Kalman gain matrix
-        SigmaY = np.matmul(np.matmul(C, SigmaX), C.T) + SigmaS
-        L = np.matmul(SigmaX, C.T)/SigmaY
+        C_hat = C_(poly_coef, xhat)
+        SigmaY = np.matmul(np.matmul(C_hat, SigmaX), C_hat.T) + SigmaS
+        L = np.matmul(SigmaX, C_hat.T)/SigmaY
 
         # KF Step 2b: State-estimate measurement update
         ytrue = measured_voltage[k]
@@ -71,9 +101,6 @@ def Plotting(ax, xstore, xhatstore, SigmaXstore, maxIter):
     ax.plot(xhatstore-3*np.sqrt(SigmaXstore), color=light_green, linestyle='-.')
     ax.grid()
     ax.set_xticks(np.round(np.linspace(0, maxIter, 4), 0))
-    ax.set_yticks([0.6, 0.65, 0.7, 0.75])#[0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75]
-    ax.set_yticklabels([60, 65, 70, 75])#[5, 15, 25, 35, 45, 55, 65, 75]
-    ax.set_ylim(0.55, 0.80)
 
 ####################
 #
@@ -105,6 +132,8 @@ B = np.array([[-delta_t / Q],
 # Output-equation matrices
 C = np.array([[a, -R_1]])
 D = np.array([[-R_0]])
+# Polynoimal fit
+poly_coef = poly_fit_OCV(15)[1]
 
 ###########################
 #
@@ -113,15 +142,15 @@ D = np.array([[-R_0]])
 ###########################
 if Varying_Sigmas:
     inputs = loadprofiles[2:3]      # input is the same for all combinations of Sigmas (Dynamic Profile 1) and in a list
-    SigmaN = [1e-1, 1e-4, 1e-7]     # Process-noise covariances
-    SigmaS = [1e-2, 1e-1]     # Sensor-noise covariances
+    SigmaN = [1e-1, 2.2e-4, 1e-7]     # Process-noise covariances
+    SigmaS = [4.1e-5, 1e-4, 1e-3]     # Sensor-noise covariances
     
     fig, axs = plt.subplots(len(SigmaN), len(SigmaS), figsize=(9, 7))
 elif Varying_inputs:
     inputs = loadprofiles[:]
     #inputs = [np.hstack([input]*6) for input in inputs]   # Used to test how the model reacts with longer inputs
     SigmaN = [1e-1] # Sigmas are constant when varying input
-    SigmaS = [1e-2]
+    SigmaS = [4.1e-5]
 
     titles = ["Constant 10A", "30A Pulses", "Dynamic Profile 1", "Dynamic Profile 2"]
     if With_profileplots:
@@ -130,11 +159,6 @@ elif Varying_inputs:
     limit = int(np.ceil(len(inputs)/2))
     fig, axs = plt.subplots(2, limit, sharey="row", figsize=(9, 7))
     axs = axs.reshape(1, len(inputs))
-elif Sigma_comparison:
-    inputs = loadprofiles[2:3]
-    SigmaN = [1e-1, 1e-4, 1e-7]
-    SigmaS = [1e-1, 1e-4, 1e-7]
-    fig, axs = plt.subplots(max(len(SigmaN), len(SigmaS)), 2, sharex="col", sharey="row", figsize=(9, 7))
 
 ##############################################
 #
@@ -161,20 +185,11 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
     for Sigma_s in SigmaS:
         plot_row = 0    # Further specifies what combination of Sigmas/inputs are being worked with
         for Sigma_n in SigmaN:
-            if Sigma_comparison:
-                if plot_col == 0:
-                    Sigma_n = SigmaN[1]
-                    Sigma_s = SigmaS[plot_row]
-                elif plot_col == 1:
-                    Sigma_s = SigmaS[1]
-                    Sigma_n = SigmaN[plot_row]
-                else:
-                    break
             # Initialise Kalman filter estimates and use the Kalman_Filter function to find lists of estimates
             xhat = np.array([[0.7],
                             [0]])
             SigmaX = np.ones((2, 2))
-            xhatstore, SigmaXstore = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
+            xhatstore, SigmaXstore = Extended_Kalman_Filter(poly_coef, input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
 
             if Sigma_n == 1e-16:    # This is for testing if the variances are 0, they give errors in the kalman filter as the mathematical equations become unstable
                 Sigma_n = 0
@@ -186,51 +201,40 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
             
             # Determined by what kind of plot is chosen at the start of script make some final touches to the plot
             if Varying_Sigmas:
+                ax.set_yticks([0.64, 0.66, 0.68, 0.7])
+                ax.set_yticklabels([64, 66, 68, 70])
+                ax.set_ylim(0.62, 0.72)
                 if plot_col == 0:
                     ax.set_ylabel("SOC [%]")
                 elif plot_col == len(SigmaS)-1:
                     twin = ax.twinx()
-                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0")+"}$")#, rotation=-90)
+                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0").replace("e-0", "$\\cdot10^{-")+"}$")#, rotation=-90)
                     twin.set_yticks([])
                     ax.set_yticklabels([])
                 else:
                     ax.set_yticklabels([])
                 if plot_row == 0:
-                    ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0")+"}$")
+                    ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-').replace("0.0e+00", "${0").replace("e-0", "$\\cdot10^{-")+"}$")
                     ax.set_xticklabels([])
                 elif plot_row == 1:
                     ax.set_xticklabels([])
                 elif plot_row == len(SigmaN)-1:
                     ax.set_xlabel("Time [s]")
             elif Varying_inputs:
+                ax.set_yticks([0.60, 0.62, 0.64, 0.66, 0.68, 0.7])
+                ax.set_yticklabels([60, 62, 64, 66, 68, 70])
+                ax.set_ylim(0.58, 0.72)
                 ax.set_title(titles[plot_col])
                 if plot_col % limit == 0:
                     ax.set_ylabel("SOC [%]")
                 if plot_col >= limit:
-                    ax.set_xlabel("Time [s]")
-            elif Sigma_comparison:
-                twin = ax.twinx()
-                twin.set_yticks([])
-                if plot_col == 0:
-                    twin.set_ylabel("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-')+"}$")#, rotation=-90)
-                    ax.set_ylabel("SOC [%]")
-                elif plot_col == 1:
-                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace('1.0e-0', '$10^{-')+"}$")#, rotation=-90)
-                if plot_row == 0:
-                    if plot_col == 0:
-                        ax.set_title("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace("1.0e-0", "$10^{-")+"}$")
-                    elif plot_col == 1:
-                        ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace("1.0e-0", "$10^{-")+"}$")
-                elif plot_row == len(axs)-1:
                     ax.set_xlabel("Time [s]")
                 
             plot_row += 1   # Prepare for next combination
         plot_col += 1   # After every plot is made for a given column, go to the next
 plt.tight_layout()
 if Varying_Sigmas:
-    plt.savefig("Figurer/NoiseAnalysisSOC5.pdf", dpi=1000)
+    plt.savefig("Figurer/EKF_9_plots.pdf", dpi=1000)
 elif Varying_inputs:
-    plt.savefig("Figurer/LoadProfiles.pdf", dpi=1000)
-elif Sigma_comparison:
-    plt.savefig("Figurer/NoiseAnalysisSOC3.pdf", dpi=1000)
+    plt.savefig("Figurer/LoadProfiles_extended.pdf", dpi=1000)
 plt.show()

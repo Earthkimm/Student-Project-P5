@@ -213,6 +213,6 @@ xticks = [[i+0.5 for i in range(len(SigmaS))],
 yticks = [[i+0.5 for i in range(len(SigmaN))],
           [format(Sigma_n, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_n in SigmaN]]
 
-Colormesh("RMSE", RMSE_matrix, 0.0005, [0.0005, 0.001, 0.005], xticks, yticks, custom_cmap, roundfactor=2)
+Colormesh("RMSE", RMSE_matrix, 0.0004, [0.0004, 0.001, 0.002, 0.003, 0.004], xticks, yticks, custom_cmap, roundfactor=2)
 Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.001, [0.001, 0.01, 0.09], xticks, yticks, custom_cmap, "Error bound width mean [%]")
 Colormesh("Deviation Percentage", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")
