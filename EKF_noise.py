@@ -39,8 +39,8 @@ def C_(coef, x):
     cc1 = [i * coef[i] * x[0][0] ** (i-1) for i in range(len(coef))]
     return np.array([[sum(cc1), -R_1]])
 
-def Extended_Kalman_Filter(poly_coef, input, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
-    maxIter = len(input)
+def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
+    maxIter = len(input_)
     xhat = initial_x
     SigmaX = initial_SigmaX
     xhatstore = np.zeros((len(xhat), maxIter))
@@ -48,7 +48,7 @@ def Extended_Kalman_Filter(poly_coef, input, measured_voltage, initial_x, initia
     SigmaXstore = np.zeros((len(xhat)**2, maxIter))
     for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
-        xhat = np.matmul(A, xhat) + B*input_Noise[k-1]
+        xhat = np.matmul(A, xhat) + B*input_[k-1]
 
         # KF Step 1b: Error-covariance time update
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
@@ -56,7 +56,7 @@ def Extended_Kalman_Filter(poly_coef, input, measured_voltage, initial_x, initia
         # KF Step 1c: Estimate system output
         cc = [poly_coef[i] * xhat[0][0] ** (i-1) for i in range(len(poly_coef))]
         C = np.array([np.sum(cc), -R_1])
-        yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k])
+        yhat = np.matmul(C, xhat) + np.dot(D, input_[k])
 
         # KF Step 2a: Compute Kalman gain matrix
         C_hat = C_(poly_coef, xhat)
@@ -75,17 +75,17 @@ def Extended_Kalman_Filter(poly_coef, input, measured_voltage, initial_x, initia
         SigmaXstore[:,k] = SigmaX.flatten()
     return xhatstore, SigmaXstore
 
-def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
-    maxIter = len(input)
-    xtrue = initial_x
-    xstore = np.zeros((len(xtrue), maxIter))
-    xstore[:,0] = xtrue.T[0]
-    y_NoNoise = np.zeros(maxIter)
+def Couloumb_Counting(input_, initial_x, OCV_data, SOC_data):
+    maxIter = len(input_)
+    x = initial_x
+    xstore = np.zeros((len(x), maxIter))
+    xstore[:,0] = x.T[0]
+    y = np.zeros(maxIter)
     for k in range(1, maxIter):
-        xtrue = np.matmul(A, xtrue) + B*input[k-1]
-        y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
-        xstore[:,k] = xtrue.T[0]
-    return maxIter, xstore, y_NoNoise
+        x = np.matmul(A, x) + B*input_[k-1]
+        y[k] = np.array(OCV_data[SOC_data == np.round(x[0, 0], 3)]) - R_1*x[1, 0] - R_0*input_[k]
+        xstore[:,k] = x.T[0]
+    return maxIter, xstore, y
 
 def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vmax=None, roundfactor=1):
     if not extra:
@@ -143,11 +143,11 @@ poly_coef = poly_fit_OCV(15)[1]
 ###########################
 SigmaN = [1e-16, 1e-7, 1e-6, 1e-5, 1e-4, 2.2e-4, 1e-3, 1e-2, 1e-1]  # Process-noise covariances [0, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 2.2e+7, 1e+8, 1e+9]#
 SigmaS = [1e-16, 1e-7, 1e-6, 1e-5, 4.1e-5, 1e-4, 1e-3, 1e-2, 1e-1]  # Sensor-noise covariances [1e-3, 2e-3, 3e-3, 4e-3, 5e-3, 6e-3, 7e-3, 8e-3, 9e-3, 1e-2]#
-input = loadprofiles[2]
+input_NoNoise = loadprofiles[2]
 
 size = [len(SigmaN), len(SigmaS)]
 RMSE_matrix = np.zeros(size)
-bound_width_store = np.zeros(size + [len(input)])
+bound_width_store = np.zeros(size + [len(input_NoNoise)])
 bound_width_mean_store = np.zeros(size)
 reliability_matrix = np.zeros(size)
 
@@ -159,12 +159,12 @@ reliability_matrix = np.zeros(size)
 # Initialise true system initial state and use CC to find voltage outputs of the battery
 xtrue = np.array([[0.7],
                     [0]])
-maxIter, xstore, y_NoNoise = Couloumb_Counting(input, xtrue, OCV, SOC)
+maxIter, xstore, y_NoNoise = Couloumb_Counting(input_NoNoise, xtrue, OCV, SOC)
 
 # Create noise for the current input
-input_std_dev = np.mean(input)*0.005/3
+input_std_dev = np.mean(input_NoNoise)*0.005/3
 noise = np.random.normal(0, input_std_dev, maxIter)
-input_Noise = input + noise
+input_Noise = input_NoNoise + noise
 
 # Create noise for the battery output
 y_std_dev = np.mean(y_NoNoise)*0.005/3

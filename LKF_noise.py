@@ -10,22 +10,23 @@ np.random.seed(42069)
 #   DEFINE FUNCTIONS
 #
 #######################
-def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
-    maxIter = len(input)
+def Kalman_Filter(input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
+    maxIter = len(input_)
     xhat = initial_x
     SigmaX = initial_SigmaX
     xhatstore = np.zeros((len(xhat), maxIter))
     xhatstore[:,0] = xhat.T[0]
     SigmaXstore = np.zeros((len(xhat)**2, maxIter))
+    SigmaXstore[:,0] = SigmaX.flatten()
     for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
-        xhat = np.matmul(A, xhat) + B*input_Noise[k-1]
+        xhat = np.matmul(A, xhat) + B*input_[k-1]
 
         # KF Step 1b: Error-covariance time update
         SigmaX = np.matmul(np.matmul(A, SigmaX),A.T) + np.matmul(B*SigmaN,B.T)
 
         # KF Step 1c: Estimate system output
-        yhat = np.matmul(C, xhat) + np.dot(D, input_Noise[k]) + b
+        yhat = np.matmul(C, xhat) + np.dot(D, input_[k]) + b
 
         # KF Step 2a: Compute Kalman gain matrix
         SigmaY = np.matmul(np.matmul(C, SigmaX), C.T) + SigmaS
@@ -43,17 +44,17 @@ def Kalman_Filter(input, measured_voltage, initial_x, initial_SigmaX, SigmaN, Si
         SigmaXstore[:,k] = SigmaX.flatten()
     return xhatstore, SigmaXstore
 
-def Couloumb_Counting(input, initial_x, OCV_data, SOC_data):
-    maxIter = len(input)
-    xtrue = initial_x
-    xstore = np.zeros((len(xtrue), maxIter))
-    xstore[:,0] = xtrue.T[0]
-    y_NoNoise = np.zeros(maxIter)
+def Couloumb_Counting(input_, initial_x, OCV_data, SOC_data):
+    maxIter = len(input_)
+    x = initial_x
+    xstore = np.zeros((len(x), maxIter))
+    xstore[:,0] = x.T[0]
+    y = np.zeros(maxIter)
     for k in range(1, maxIter):
-        xtrue = np.matmul(A, xtrue) + B*input[k-1]
-        y_NoNoise[k] = np.array([OCV_data[SOC_data == np.round(xtrue[0, 0], 3)]]) - R_1*xtrue[1, 0] - R_0*input[k]
-        xstore[:,k] = xtrue.T[0]
-    return maxIter, xstore, y_NoNoise
+        x = np.matmul(A, x) + B*input_[k-1]
+        y[k] = np.array(OCV_data[SOC_data == np.round(x[0, 0], 3)]) - R_1*x[1, 0] - R_0*input_[k]
+        xstore[:,k] = x.T[0]
+    return maxIter, xstore, y
 
 def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vmax=None, roundfactor=1):
     if not extra:
@@ -69,7 +70,7 @@ def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vma
     plt.yticks(yticks[0], yticks[1])
     plt.ylabel("$\\hat{\sigma}_{n}^2$", rotation=0)
     plt.tight_layout()
-    plt.savefig(f"Noise comparison colormeshes\\{plot} Colormesh.pdf", dpi=1000)
+    plt.savefig(f"Noise comparison colormeshes/{plot} Colormesh.pdf", dpi=1000)
     plt.clf()
 
 ####################
@@ -77,11 +78,11 @@ def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vma
 #   LOAD DATASETS
 #
 ####################
-ocv_curve = pd.read_csv(".\\OCV_curve.csv")
+ocv_curve = pd.read_csv("./OCV_curve.csv")
 OCV, SOC = ocv_curve["OCV"], ocv_curve["SOC"]
 print(OCV[SOC == 0.002])    # Prints OCV when SOC = 0.002
 
-fp = ".\\udds.csv"      # Used to access dataset for "Dynamic Profile 1"
+fp = "./udds.csv"      # Used to access dataset for "Dynamic Profile 1"
 df = pd.read_csv(fp)
 
 ###########################
