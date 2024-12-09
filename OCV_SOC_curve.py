@@ -11,7 +11,7 @@ Linear_fit_plot = False
 
 def linear_fit_OCV():
     # Load the CSV file
-    file_path = '.\\OCV_curve.csv'
+    file_path = './OCV_curve.csv'
     df = pd.read_csv(file_path)
     
     # Name SOC and OCV columns
