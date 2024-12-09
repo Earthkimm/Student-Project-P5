@@ -1,5 +1,6 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from OCV_SOC_curve import a, b
+from OCV_SOC_curve_EKF import poly_fit_OCV
 from LoadProfiles import loadprofiles, profile_plots
 from project_colors import *
 
@@ -17,31 +18,6 @@ With_profileplots = Varying_inputs and False
 #   DEFINE FUNCTIONS
 #
 #######################
-def poly_fit_OCV(order):
-    # Load the CSV file
-    file_path = './OCV_curve.csv'
-    df = pd.read_csv(file_path)
-    
-    # Name SOC and OCV columns
-    soc = df['SOC']
-    ocv = df['OCV']
-    
-    # Define the range for filtering data
-    min_soc = 0.2
-    max_soc = 0.8
-
-    # Filter the data within the specified SOC range
-    mask = (soc >= min_soc) & (soc <= max_soc)
-    filtered_soc = soc[mask]
-    filtered_ocv = ocv[mask]
-    
-    # Create polynomial coefficients and reverse their order so the first in the array is for smallest order of z[k]
-    poly_coefficients = np.polyfit(filtered_soc, filtered_ocv, order)[::-1]
-    poly_values = np.zeros_like(filtered_soc)
-    for i in range(order+1):
-        poly_values += poly_coefficients[i] * filtered_soc ** i
-    return poly_values, poly_coefficients
-
 def C_(coef, x):
     cc1 = [i * coef[i] * x[0][0] ** (i-1) for i in range(len(coef))]
     return np.array([[sum(cc1), -R_1]])
