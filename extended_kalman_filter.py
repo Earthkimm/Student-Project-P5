@@ -185,7 +185,7 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
     for Sigma_s in SigmaS:
         plot_row = 0    # Further specifies what combination of Sigmas/inputs are being worked with
         for Sigma_n in SigmaN:
-            # Initialise Kalman filter estimates and use the Kalman_Filter function to find lists of estimates
+            # Initialise Kalman filter estimates and use the Extended_Kalman_Filter function to find lists of estimates
             xhat = np.array([[0.7],
                             [0]])
             SigmaX = np.ones((2, 2))
