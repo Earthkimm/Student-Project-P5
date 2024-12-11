@@ -14,6 +14,6 @@ The scripts ‘OCV_SOC_curve_LKF.py’ and ‘OCV_SOC_curve_EKF.py’ contain th
 
 The script ‘project_colors.py’ just contains the hex code for the colors used in the plots. 
 
-Lastly the csv files ‘udds.csv’ and ‘us06.csv’ contain the data from dynamic profile 1 and 2. 
+Lastly the csv files ‘udds.csv’ and ‘us06.csv’ contain the data from dynamic profile 1 and 2. The file OCV_curve.csv contains OCV-SOC data.
 
  
