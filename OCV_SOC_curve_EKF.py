@@ -73,13 +73,13 @@ names = []
 if Residual_plot:
     fig1, axs = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(12, 6))
     figs.append(fig1)
-    names.append("Figurer/Residual_plot_EKF Python")
+    names.append("Figures_EKF/Residual_plot_EKF")
     colors = [None]*4
     plot = True
 if Polynomial_fit_plot:
     fig2, ax = plt.subplots(1, figsize=(6, 3))
     figs.append(fig2)
-    names.append("Figurer/OCV_SOC_EKF")
+    names.append("Figures_EKF/OCV_SOC_EKF")
     colors = [red, orange, light_green, purple]
     plot = True
 

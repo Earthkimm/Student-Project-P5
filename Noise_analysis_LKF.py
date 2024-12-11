@@ -70,7 +70,7 @@ def Colormesh(plot, matrix, vmin, cticks, xticks, yticks, cmap, extra=False, vma
     plt.yticks(yticks[0], yticks[1])
     plt.ylabel("$\\hat{\sigma}_{n}^2$", rotation=0)
     plt.tight_layout()
-    plt.savefig(f"Noise comparison colormeshes/{plot} Colormesh.pdf", dpi=1000)
+    plt.savefig(f"Figures_LKF/Noise_analysis_{plot}_LKF.pdf", dpi=1000)
     plt.clf()
 
 ####################
@@ -183,5 +183,5 @@ yticks = [[i+0.5 for i in range(len(SigmaN))],
           [format(Sigma_n, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_n in SigmaN]]
 
 Colormesh("RMSE", RMSE_matrix, 0.014, [0.014, 0.0142, 0.0144, 0.0146, 0.0148, 0.015, 0.0152, 0.0154], xticks, yticks, custom_cmap, roundfactor=2)
-Colormesh("Bound Width Error Mean", bound_width_mean_store, 0.0001, [0.0001, 0.001, 0.01, 0.1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
-Colormesh("Deviation Percentage", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")
+Colormesh("EBW_mean", bound_width_mean_store, 0.004, [0.004, 0.01, 0.1], xticks, yticks, custom_cmap, "Error bound width mean [%]")
+Colormesh("Percentage_outside_EB", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")

@@ -26,7 +26,7 @@ def Couloumb_Counting(input_, initial_x, OCV_data, SOC_data):
         xstore[:,k] = x.T[0]
     return maxIter, xstore, y
 
-def Kalman_Filter(input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
+def Linear_Kalman_Filter(input_, measured_voltage, initial_x, initial_SigmaX, SigmaN, SigmaS):
     maxIter = len(input_)
     xhat = initial_x
     SigmaX = initial_SigmaX
@@ -199,7 +199,10 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
             profiles = [xstore]
             colors = [orange]
             linestyles = ["-"]
-            name = "Figurer/"
+            if not include_EKF:
+                name = "Figures_LKF/"
+            elif include_EKF:
+                name = "Figures_EKF/"
             if include_CC:
                 xhatstore_CC = Couloumb_Counting(input_Noise, xhat, OCV, SOC)[1]
                 profiles.append(xhatstore_CC)
@@ -207,7 +210,7 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
                 linestyles.append("--")
                 name += "CC_"
             if include_LKF:
-                xhatstore_LKF = Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)[0]
+                xhatstore_LKF = Linear_Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)[0]
                 profiles.append(xhatstore_LKF)
                 colors.append(dark_green)
                 linestyles.append("-")

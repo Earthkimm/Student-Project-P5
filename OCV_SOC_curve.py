@@ -58,7 +58,7 @@ def linear_fit_OCV():
         ax.set_title("", pad=-10)   # stats.probplot creates a title for the plot, this is unwanted and is thus removed, pad is to counteract the spacing made for the title
         ax.set_xlabel("Theoretical Quantiles")
         ax.set_ylabel("Sample Quantiles")
-        plt.savefig('Figurer/QQ-plot Python.pdf', dpi=400, bbox_inches='tight')
+        plt.savefig('Figures_LKF/QQ-plot.pdf', dpi=400, bbox_inches='tight')
         plt.show()
     
     # Residuals vs Fitted values plot
@@ -70,7 +70,7 @@ def linear_fit_OCV():
         ax.hlines(0, -2, 6, orange)
         ax.set_xlim(3.25, 4.25)
         ax.grid()
-        plt.savefig('Figurer/Residual_plot Python.pdf', dpi=400, bbox_inches='tight')
+        plt.savefig('Figures_LKF/Residual_plot_LKF.pdf', dpi=400, bbox_inches='tight')
         plt.show()
 
     # Plot the data
@@ -83,7 +83,7 @@ def linear_fit_OCV():
         ax.set_xlabel('SOC [%]')
         ax.set_ylabel('OCV [V]')
         ax.grid()
-        plt.savefig('Figurer/OCV_SOC.pdf', format='pdf', dpi=400, bbox_inches='tight')
+        plt.savefig('Figures_LKF/OCV_SOC_LKF.pdf', format='pdf', dpi=400, bbox_inches='tight')
         plt.show()
     
     return beta_1[0], beta_2[0]

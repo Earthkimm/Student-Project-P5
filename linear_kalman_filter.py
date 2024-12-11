@@ -10,8 +10,6 @@ from project_colors import *
 ###############################
 Varying_Sigmas = True
 Varying_inputs = False
-With_profileplots = Varying_inputs and False
-Sigma_comparison = False
 
 #######################
 #
@@ -124,17 +122,10 @@ elif Varying_inputs:
     SigmaS = [1e-2]
 
     titles = ["Constant 10A", "30A Pulses", "Dynamic Profile 1", "Dynamic Profile 2"]
-    if With_profileplots:
-        profile_plots(inputs, titles)
 
     limit = int(np.ceil(len(inputs)/2))
     fig, axs = plt.subplots(2, limit, sharey="row", figsize=(9, 7))
     axs = axs.reshape(1, len(inputs))
-elif Sigma_comparison:
-    inputs = loadprofiles[2:3]
-    SigmaN = [1e-1, 1e-4, 1e-7]
-    SigmaS = [1e-1, 1e-4, 1e-7]
-    fig, axs = plt.subplots(max(len(SigmaN), len(SigmaS)), 2, sharex="col", sharey="row", figsize=(9, 7))
 
 ##############################################
 #
@@ -161,15 +152,6 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
     for Sigma_s in SigmaS:
         plot_row = 0    # Further specifies what combination of Sigmas/inputs are being worked with
         for Sigma_n in SigmaN:
-            if Sigma_comparison:
-                if plot_col == 0:
-                    Sigma_n = SigmaN[1]
-                    Sigma_s = SigmaS[plot_row]
-                elif plot_col == 1:
-                    Sigma_s = SigmaS[1]
-                    Sigma_n = SigmaN[plot_row]
-                else:
-                    break
             # Initialise Kalman filter estimates and use the Kalman_Filter function to find lists of estimates
             xhat = np.array([[0.7],
                             [0]])
@@ -208,29 +190,12 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
                     ax.set_ylabel("SOC [%]")
                 if plot_col >= limit:
                     ax.set_xlabel("Time [s]")
-            elif Sigma_comparison:
-                twin = ax.twinx()
-                twin.set_yticks([])
-                if plot_col == 0:
-                    twin.set_ylabel("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace('1.0e-0', '$10^{-')+"}$")#, rotation=-90)
-                    ax.set_ylabel("SOC [%]")
-                elif plot_col == 1:
-                    twin.set_ylabel("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace('1.0e-0', '$10^{-')+"}$")#, rotation=-90)
-                if plot_row == 0:
-                    if plot_col == 0:
-                        ax.set_title("$\\hat{\\sigma}_{n}^2$="+format(Sigma_n, ".1e").replace("1.0e-0", "$10^{-")+"}$")
-                    elif plot_col == 1:
-                        ax.set_title("$\\hat{\\sigma}_{s}^2$="+format(Sigma_s, ".1e").replace("1.0e-0", "$10^{-")+"}$")
-                elif plot_row == len(axs)-1:
-                    ax.set_xlabel("Time [s]")
                 
             plot_row += 1   # Prepare for next combination
         plot_col += 1   # After every plot is made for a given column, go to the next
 plt.tight_layout()
 if Varying_Sigmas:
-    plt.savefig("Figurer/NoiseAnalysisSOC5.pdf", dpi=1000)
+    plt.savefig("Figures_LKF/Noise_analysis_6_plots_LKF.pdf", dpi=1000)
 elif Varying_inputs:
-    plt.savefig("Figurer/LoadProfiles.pdf", dpi=1000)
-elif Sigma_comparison:
-    plt.savefig("Figurer/NoiseAnalysisSOC3.pdf", dpi=1000)
+    plt.savefig("Figures_LKF/LoadProfiles_LKF.pdf", dpi=1000)
 plt.show()

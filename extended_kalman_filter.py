@@ -1,7 +1,7 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from OCV_SOC_curve import a, b
 from OCV_SOC_curve_EKF import poly_fit_OCV
-from LoadProfiles import loadprofiles, profile_plots
+from LoadProfiles import loadprofiles
 from project_colors import *
 
 ###############################
@@ -11,7 +11,6 @@ from project_colors import *
 ###############################
 Varying_Sigmas = True
 Varying_inputs = False
-With_profileplots = Varying_inputs and False
 
 #######################
 #
@@ -129,8 +128,6 @@ elif Varying_inputs:
     SigmaS = [4.1e-5]
 
     titles = ["Constant 10A", "30A Pulses", "Dynamic Profile 1", "Dynamic Profile 2"]
-    if With_profileplots:
-        profile_plots(inputs, titles)
 
     limit = int(np.ceil(len(inputs)/2))
     fig, axs = plt.subplots(2, limit, sharey="row", figsize=(9, 7))
@@ -210,7 +207,7 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
         plot_col += 1   # After every plot is made for a given column, go to the next
 plt.tight_layout()
 if Varying_Sigmas:
-    plt.savefig("Figurer/EKF_9_plots.pdf", dpi=1000)
+    plt.savefig("Figures_EKF/EKF_9_plots.pdf", dpi=1000)
 elif Varying_inputs:
-    plt.savefig("Figurer/LoadProfiles_extended.pdf", dpi=1000)
+    plt.savefig("Figures_EKF/LoadProfiles_EKF.pdf", dpi=1000)
 plt.show()
