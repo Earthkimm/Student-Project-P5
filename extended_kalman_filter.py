@@ -50,7 +50,12 @@ def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initi
         xhat += L*(ytrue - yhat)
 
         # KF Step 2c: Error-covariance measurement update
-        SigmaX -= np.matmul(np.matmul(L, SigmaY), L.T)
+        Joseph = np.eye(2) - np.matmul(L, C_hat)
+        SigmaX = np.matmul(Joseph, np.matmul(SigmaX, Joseph.T)) + np.matmul(L, SigmaS * L.T)
+        if not np.all(np.linalg.eigvals(SigmaX) >= 0):
+            U, S, Vt = np.linalg.svd(SigmaX)
+            H = np.matmul(Vt.T, np.matmul(S, Vt))
+            SigmaX = (SigmaX + SigmaX.T + H + H.T)/4
 
         # [Store information for evaluation/plotting purposes]
         xhatstore[:,k] = xhat.T

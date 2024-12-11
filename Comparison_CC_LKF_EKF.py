@@ -1,6 +1,6 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from OCV_SOC_curve import a, b
-from LoadProfiles import loadprofiles, profile_plots
+from LoadProfiles import loadprofiles
 from project_colors import *
 
 initial_SOC_guess = 0.6
@@ -118,7 +118,12 @@ def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initi
         xhat += L*(ytrue - yhat)
 
         # KF Step 2c: Error-covariance measurement update
-        SigmaX -= np.matmul(np.matmul(L, SigmaY), L.T)
+        Joseph = np.eye(2) - np.matmul(L, C_hat)
+        SigmaX = np.matmul(Joseph, np.matmul(SigmaX, Joseph.T)) + np.matmul(L, SigmaS * L.T)
+        if not np.all(np.linalg.eigvals(SigmaX) >= 0):
+            U, S, Vt = np.linalg.svd(SigmaX)
+            H = np.matmul(Vt.T, np.matmul(S, Vt))
+            SigmaX = (SigmaX + SigmaX.T + H + H.T)/4
 
         # [Store information for evaluation/plotting purposes]
         xhatstore[:,k] = xhat.T
@@ -163,8 +168,6 @@ poly_coef = poly_fit_OCV(15)[1]
 #   INITIALISE VARIABLES
 #
 ###########################
-SigmaN = [1e-1]
-SigmaS = [1e-2]
 inputs = loadprofiles[2:3]
 
 ##############################################
@@ -188,40 +191,38 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
     # Create noise for the battery output
     y_std_dev = np.mean(y_NoNoise)*0.005/3
     y_Noise = y_NoNoise + np.random.normal(0, y_std_dev, maxIter)
-    for Sigma_s in SigmaS:
-        plot_row = 0    # Further specifies what combination of Sigmas/inputs are being worked with
-        for Sigma_n in SigmaN:
-            # Initialise Kalman filter estimates and use the different functions to find each of the estimates
-            xhat = np.array([[initial_SOC_guess],
-                            [0]])
-            SigmaX = np.ones((2, 2))
 
-            profiles = [xstore]
-            colors = [orange]
-            linestyles = ["-"]
-            if not include_EKF:
-                name = "Figures_LKF/"
-            elif include_EKF:
-                name = "Figures_EKF/"
-            if include_CC:
-                xhatstore_CC = Couloumb_Counting(input_Noise, xhat, OCV, SOC)[1]
-                profiles.append(xhatstore_CC)
-                colors.append(purple)
-                linestyles.append("--")
-                name += "CC_"
-            if include_LKF:
-                xhatstore_LKF = Linear_Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)[0]
-                profiles.append(xhatstore_LKF)
-                colors.append(dark_green)
-                linestyles.append("-")
-                name += "LKF_"
-            if include_EKF:
-                xhatstore_EKF = Extended_Kalman_Filter(poly_coef, input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)[0]
-                profiles.append(xhatstore_EKF)
-                colors.append(red)
-                linestyles.append("--")
-                name += "EKF_"
-            name += "comp_"
+    # Initialise Kalman filter estimates and use the different functions to find each of the estimates
+    xhat = np.array([[initial_SOC_guess],
+                    [0]])
+    SigmaX = np.ones((2, 2))
+
+    profiles = [xstore]
+    colors = [orange]
+    linestyles = ["-"]
+    if not include_EKF:
+        name = "Figures_LKF/"
+    elif include_EKF:
+        name = "Figures_EKF/"
+    if include_CC:
+        xhatstore_CC = Couloumb_Counting(input_Noise, xhat, OCV, SOC)[1]
+        profiles.append(xhatstore_CC)
+        colors.append(purple)
+        linestyles.append("--")
+        name += "CC_"
+    if include_LKF:
+        xhatstore_LKF = Linear_Kalman_Filter(input_Noise, y_Noise, xhat, SigmaX, 1e-1, 1e-2)[0]
+        profiles.append(xhatstore_LKF)
+        colors.append(dark_green)
+        linestyles.append("-")
+        name += "LKF_"
+    if include_EKF:
+        xhatstore_EKF = Extended_Kalman_Filter(poly_coef, input_Noise, y_Noise, xhat, SigmaX, 1e-1, 4.1e-5)[0]
+        profiles.append(xhatstore_EKF)
+        colors.append(red)
+        linestyles.append("--")
+        name += "EKF_"
+    name += "comp_"
 
 plt.rc('font', weight='normal', size=16)
 plt.figure(figsize=(5, 4))

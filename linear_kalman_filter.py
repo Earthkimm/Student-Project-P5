@@ -1,6 +1,6 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd
 from OCV_SOC_curve import a, b
-from LoadProfiles import loadprofiles, profile_plots
+from LoadProfiles import loadprofiles
 from project_colors import *
 
 ###############################

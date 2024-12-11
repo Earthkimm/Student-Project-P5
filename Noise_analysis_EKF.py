@@ -1,5 +1,4 @@
 import numpy as np, matplotlib.pyplot as plt, pandas as pd, matplotlib.colors as colors
-from OCV_SOC_curve import a, b
 from LoadProfiles import loadprofiles
 from project_colors import *
 
@@ -68,7 +67,12 @@ def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initi
         xhat += L*(ytrue - yhat)
 
         # KF Step 2c: Error-covariance measurement update
-        SigmaX -= np.matmul(np.matmul(L, SigmaY), L.T)
+        Joseph = np.eye(2) - np.matmul(L, C_hat)
+        SigmaX = np.matmul(Joseph, np.matmul(SigmaX, Joseph.T)) + np.matmul(L, SigmaS * L.T)
+        if not np.all(np.linalg.eigvals(SigmaX) >= 0):
+            U, S, Vt = np.linalg.svd(SigmaX)
+            H = np.matmul(Vt.T, np.matmul(S, Vt))
+            SigmaX = (SigmaX + SigmaX.T + H + H.T)/4
 
         # [Store information for evaluation/plotting purposes]
         xhatstore[:,k] = xhat.T
@@ -213,6 +217,6 @@ xticks = [[i+0.5 for i in range(len(SigmaS))],
 yticks = [[i+0.5 for i in range(len(SigmaN))],
           [format(Sigma_n, ".1e").replace("0.0e+00", "${0").replace("1.0e-0", "$10^{-").replace("e-0", "$\\cdot10^{-")+"}$" for Sigma_n in SigmaN]]
 
-Colormesh("RMSE", RMSE_matrix, 0.0004, [0.0004, 0.001, 0.002, 0.003, 0.004], xticks, yticks, custom_cmap, roundfactor=2)
+Colormesh("RMSE", RMSE_matrix, 0.0004, [0.0004, 0.0006, 0.001], xticks, yticks, custom_cmap, roundfactor=2)
 Colormesh("EBW_mean", bound_width_mean_store, 0.001, [0.001, 0.01, 0.09], xticks, yticks, custom_cmap, "Error bound width mean [%]")
 Colormesh("Percentage_outside_EB", reliability_matrix, 0.001, [0.001, 0.01, 0.1, 0.9], xticks, yticks, custom_cmap, "% of true SOC outside error bounds")
