@@ -47,6 +47,7 @@ noise = np.random.normal(0, np.sqrt(var_epsilon), maxIter)
 input_Noise = input_NoNoise + noise
 zhatStore, SigmaZstore = Couloumb_Counting(input_Noise, z_0, var_epsilon)[1:]
 
+plt.figure(figsize=(6,3))
 plt.plot(ztrueStore, color=orange)
 plt.plot(zhatStore, color=dark_green)
 plt.plot(zhatStore+3*np.sqrt(SigmaZstore), color=light_green)
