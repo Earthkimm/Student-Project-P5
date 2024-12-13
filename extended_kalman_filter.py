@@ -28,6 +28,7 @@ def Extended_Kalman_Filter(poly_coef, input_, measured_voltage, initial_x, initi
     xhatstore = np.zeros((len(xhat), maxIter))
     xhatstore[:,0] = xhat.T[0]
     SigmaXstore = np.zeros((len(xhat)**2, maxIter))
+    SigmaXstore[:,0] = SigmaX.flatten()
     for k in range(1, maxIter):
         # KF Step 1a: State-prediction time update
         xhat = np.matmul(A, xhat) + B*input_[k-1]
