@@ -169,7 +169,7 @@ for input_NoNoise in inputs:    # It is assumed inputs are without noise until i
                             [0]])
             SigmaX = np.ones((2, 2))
             xhatstore, SigmaXstore = Extended_Kalman_Filter(poly_coef, input_Noise, y_Noise, xhat, SigmaX, Sigma_n, Sigma_s)
-
+            
             if Sigma_n == 1e-16:    # This is for testing if the variances are 0, they give errors in the kalman filter as the mathematical equations become unstable
                 Sigma_n = 0
             if Sigma_s == 1e-16:

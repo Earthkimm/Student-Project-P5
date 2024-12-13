@@ -9,10 +9,10 @@ LoadProfiles_WithSpeeds_plot = False
 #   Create loadprofiles
 #
 ##########################
-constant_current = np.ones(1200)*10
+constant_current = np.ones(1370)*10
 
-pulse_currents = np.zeros(1200)
-for i in range(5):
+pulse_currents = np.zeros(1370)
+for i in range(6):
     interval = (i+1)*200
     pulse_currents[interval:interval+60] = 30
 
