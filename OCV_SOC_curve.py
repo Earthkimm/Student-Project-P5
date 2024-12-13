@@ -6,8 +6,8 @@ from project_colors import *
 #   CHOOSE WHICH PLOTS TO PLOT
 #
 #################################
-QQ_plot = True
-Residual_plot = True
+QQ_plot = False
+Residual_plot = False
 Linear_fit_plot = False
 
 def linear_fit_OCV():
@@ -53,7 +53,9 @@ def linear_fit_OCV():
         (osm, osr), line_info = stats.probplot(filtered_ocv, dist="norm", plot=plt)
         line1, line2 = ax.get_lines()   # stats.probplot creates is own lines with colors, this is just to changes these colors
         line1.set_color(dark_green)
+        line1.set_zorder(3)
         line2.set_color(orange)
+        line2.set_zorder(2)
         ax.grid()
         ax.set_title("", pad=-10)   # stats.probplot creates a title for the plot, this is unwanted and is thus removed, pad is to counteract the spacing made for the title
         ax.set_xlabel("Theoretical Quantiles")
@@ -64,8 +66,8 @@ def linear_fit_OCV():
     # Residuals vs Fitted values plot
     if Residual_plot:
         fig, ax = plt.subplots(1, figsize=(5, 4))
-        ax.hlines(0, -2, 6, orange)
-        ax.scatter(fitted_values, residuals, color=dark_green)
+        ax.scatter(fitted_values, residuals, color=dark_green, zorder=3)
+        ax.hlines(0, -2, 6, orange, zorder=2)
         ax.set_xlabel("Fitted Values [V]")
         ax.set_ylabel("Residuals [V]")
         ax.set_xlim(3.5, 4)
